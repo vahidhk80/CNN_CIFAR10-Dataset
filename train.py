@@ -11,6 +11,8 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
+import wandb
+import mlflow
 
 parser = argparse.ArgumentParser()
 
@@ -169,8 +171,6 @@ def net_eval(model, testloader, device):
    
 
 if args.tracker == "wandb":
-    import wandb
-
     wandb.init(
         project="cifar10-assessment",
         config={
@@ -185,8 +185,6 @@ if args.tracker == "wandb":
     )
 
 elif args.tracker == "mlflow":
-    import mlflow
-
     mlflow.start_run()
 
 else:
