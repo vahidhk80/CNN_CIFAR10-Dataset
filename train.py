@@ -302,6 +302,3 @@ test_accuracy = checkpoint['test_accuracy']
 
 test_accuracy, all_labels, all_predictions = net_eval(net, testloader, device)
 print(f"Test Accuracy from saved best model is {test_accuracy} and test accuracy from the training loop is {best_test_accuracy}")
-
-ls
-
