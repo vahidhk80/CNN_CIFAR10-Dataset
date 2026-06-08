@@ -182,32 +182,20 @@ rank = int(os.environ.get("RANK", 0))
 is_main_process = rank == 0
 
 if args.tracker == "wandb" and is_main_process:
-    try:
-        import wandb
-    
-        if wandb.api.api_key is None:
-            print("\nERROR: No WandB API key found.")
-            print("Please login first:")
-            print("    wandb login YOUR_API_KEY")
-            exit(1)
-            
-        wandb.init(
-            project="cifar10-assessment",
-            config={
-                "dataset": "CIFAR10",
-                "epochs_total": epochs,
-                "Learning_rate": lr,
-                "batch_size": batch_size,
-                "momentum": momentum,
-                "optimizer": "Adam",
-                "loss": "CrossEntropyLoss"        
-            }
-        )
-    except ImportError:
-        print("\nERROR: WandB is not installed.")
-        print("Run:")
-        print("    pip install wandb")
-        exit(1)
+    import wandb
+      
+    wandb.init(
+        project="cifar10-assessment",
+        config={
+            "dataset": "CIFAR10",
+            "epochs_total": epochs,
+            "Learning_rate": lr,
+            "batch_size": batch_size,
+            "momentum": momentum,
+            "optimizer": "Adam",
+            "loss": "CrossEntropyLoss"        
+        }
+    )
         
 elif args.tracker == "mlflow" and is_main_process:
     import mlflow
