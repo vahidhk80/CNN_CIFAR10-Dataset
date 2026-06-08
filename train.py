@@ -13,6 +13,7 @@ import seaborn as sns
 import argparse
 import wandb
 import mlflow
+import os
 
 parser = argparse.ArgumentParser()
 
@@ -33,7 +34,6 @@ lr = args.lr
 batch_size = args.batch_size
 momentum = args.momentum
 
-import os
 os.system("pip freeze > requirements.txt")
 
 SEED = 42
@@ -169,8 +169,10 @@ def net_eval(model, testloader, device):
     print(f'Accuracy of the network on the 10000 test images: {accuracy} %')
     return accuracy, all_labels, all_predictions
    
+rank = int(os.environ.get("RANK", 0))
+is_main_process = rank == 0
 
-if args.tracker == "wandb":
+if args.tracker == "wandb" and is_main_process:
     wandb.init(
         project="cifar10-assessment",
         config={
@@ -184,7 +186,9 @@ if args.tracker == "wandb":
         }
     )
 
-elif args.tracker == "mlflow":
+elif args.tracker == "mlflow" and is_main_process:
+    mlflow.set_tracking_uri("file:./runs/mlruns")
+    mlflow.set_experiment("CNN_CIFAR10")
     mlflow.start_run()
 
 else:
@@ -199,13 +203,13 @@ for epoch in range(epochs):
     )
     test_accuracy, all_labels, all_predictions = net_eval(net, testloader, device)
     #logging the metrics by wandb
-    if args.tracker == "wandb":
+    if args.tracker == "wandb" and is_main_process:
         wandb.log({
             "train_loss": train_loss,
             "test_accuracy": test_accuracy
         }, step=epoch + 1)
     
-    elif args.tracker == "mlflow":
+    elif args.tracker == "mlflow" and is_main_process:
         mlflow.log_metric("train_loss", train_loss, step=epoch + 1)
         mlflow.log_metric("test_accuracy", test_accuracy, step=epoch + 1)    
     
@@ -280,7 +284,7 @@ _, predicted = torch.max(outputs, 1)
 print('Predicted: ', ' '.join(f'{classes[predicted[j]]:5s}'
                               for j in range(4)))
 
-if args.tracker == "wandb":
+if args.tracker == "wandb" and is_main_process:
 
     artifact = wandb.Artifact("best-cifar10-model", type="model")
     
@@ -288,7 +292,7 @@ if args.tracker == "wandb":
     
     wandb.log_artifact(artifact)
     wandb.finish()
-elif args.tracker == "mlflow":
+elif args.tracker == "mlflow" and is_main_process:
     mlflow.end_run()
 
 checkpoint = torch.load(PATH)
