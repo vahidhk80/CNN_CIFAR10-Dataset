@@ -1,3 +1,4 @@
+# Importing required madules
 import torch
 import torchvision
 from torchvision.transforms import v2
@@ -11,18 +12,17 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
-import wandb
-import mlflow
 import os
 
+# Using argparse to take the argument from the user
 parser = argparse.ArgumentParser()
-
 parser.add_argument(
     "--tracker",
     type=str,
     default="wandb",
     choices=["wandb", "mlflow", "none"]
 )
+
 parser.add_argument("--epochs", type=int, default=2)
 parser.add_argument("--lr", type=float, default=0.001)
 parser.add_argument("--batch-size", type=int, default=128)
@@ -34,8 +34,10 @@ lr = args.lr
 batch_size = args.batch_size
 momentum = args.momentum
 
+# Note all the pakage versions in the requirement.txt file
 os.system("pip freeze > requirements.txt")
 
+# Setting random seeds for all random operation and setting determinitic flags
 SEED = 42
 
 random.seed(SEED)
@@ -51,6 +53,8 @@ torch.backends.cudnn.benchmark = False
 
 print(f"Random seed set to {SEED}")
 
+#Data loading and processing
+# Defining transform and loading the CIFAR10 dataset
 transform = v2.Compose([
     v2.ToImage(),
     v2.ToDtype(torch.float32, scale=True),
@@ -88,6 +92,7 @@ imshow(torchvision.utils.make_grid(images))
 # print labels
 print(' '.join(f'{classes[labels[j]]:5s}' for j in range(batch_size)))
 
+# Model ArchitectureDefining- CNN
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
@@ -110,17 +115,20 @@ class Net(nn.Module):
 
 net = Net()
 
+# Device and optimization setup
 device = torch.device(torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else 'cpu')
 
 # Assuming that we are on a CUDA machine, this should print a CUDA device:
-
 print(device)
 
 net.to(device)
 
+#Defining optimiser and loss function
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum)
 
+# Training Loop Implementation
+#defining a train function, becuase it can be used later for checkpointing.
 def net_train_one_epoch(model, epoch, trainloader, optimizer, criterion):
     running_loss = 0.0
     total_loss = 0.0
@@ -145,7 +153,7 @@ def net_train_one_epoch(model, epoch, trainloader, optimizer, criterion):
 
     print('Finished Training for epoch: ', epoch)
     return model, total_loss/len(trainloader)
-
+# defining an evalutaion function that is more suitable when needed to evaluation at checkpointing.
 def net_eval(model, testloader, device):
     correct = 0
     total = 0
@@ -168,32 +176,50 @@ def net_eval(model, testloader, device):
     accuracy = 100 * correct // total
     print(f'Accuracy of the network on the 10000 test images: {accuracy} %')
     return accuracy, all_labels, all_predictions
-   
+
+# Starting the tracker before the first training
 rank = int(os.environ.get("RANK", 0))
 is_main_process = rank == 0
 
 if args.tracker == "wandb" and is_main_process:
-    wandb.init(
-        project="cifar10-assessment",
-        config={
-            "dataset": "CIFAR10",
-            "epochs_total": epochs,
-            "Learning_rate": lr,
-            "batch_size": batch_size,
-            "momentum": momentum,
-            "optimizer": "Adam",
-            "loss": "CrossEntropyLoss"        
-        }
-    )
-
+    try:
+        import wandb
+    
+        if wandb.api.api_key is None:
+            print("\nERROR: No WandB API key found.")
+            print("Please login first:")
+            print("    wandb login YOUR_API_KEY")
+            exit(1)
+            
+        wandb.init(
+            project="cifar10-assessment",
+            config={
+                "dataset": "CIFAR10",
+                "epochs_total": epochs,
+                "Learning_rate": lr,
+                "batch_size": batch_size,
+                "momentum": momentum,
+                "optimizer": "Adam",
+                "loss": "CrossEntropyLoss"        
+            }
+        )
+    except ImportError:
+        print("\nERROR: WandB is not installed.")
+        print("Run:")
+        print("    pip install wandb")
+        exit(1)
+        
 elif args.tracker == "mlflow" and is_main_process:
-    mlflow.set_tracking_uri("file:./runs/mlruns")
+    import mlflow
+    
+    mlflow.set_tracking_uri("sqlite:///runs/mlflow.db")
     mlflow.set_experiment("CNN_CIFAR10")
     mlflow.start_run()
 
 else:
     print("Tracking disabled")
 
+# Training loop
 PATH = './cifar_best_model.pth'
 best_test_accuracy = 0
 for epoch in range(epochs):
@@ -245,7 +271,7 @@ with torch.no_grad():
 for classname, correct_count in correct_pred.items():
     accuracy = 100 * float(correct_count) / total_pred[classname]
     print(f'Accuracy for class: {classname:5s} is {accuracy:.1f} %')
-
+# Confusion matrix
 cm = confusion_matrix(all_labels, all_predictions)
 print(cm)
 
@@ -264,7 +290,7 @@ plt.ylabel("True Label")
 plt.title("Confusion Matrix")
 
 plt.show()
-
+# setting checkpoint
 checkpoint = torch.load(PATH)
 
 net.load_state_dict(checkpoint['model_state_dict'])
@@ -283,7 +309,7 @@ _, predicted = torch.max(outputs, 1)
 
 print('Predicted: ', ' '.join(f'{classes[predicted[j]]:5s}'
                               for j in range(4)))
-
+# finalizing tracking
 if args.tracker == "wandb" and is_main_process:
 
     artifact = wandb.Artifact("best-cifar10-model", type="model")
@@ -294,7 +320,7 @@ if args.tracker == "wandb" and is_main_process:
     wandb.finish()
 elif args.tracker == "mlflow" and is_main_process:
     mlflow.end_run()
-
+# loading the best model for accuracy calculation
 checkpoint = torch.load(PATH)
 
 net.load_state_dict(checkpoint['model_state_dict'])
