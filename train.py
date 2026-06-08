@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
 import os
+import sys
 
 # Using argparse to take the argument from the user
 parser = argparse.ArgumentParser()
@@ -182,27 +183,39 @@ rank = int(os.environ.get("RANK", 0))
 is_main_process = rank == 0
 
 if args.tracker == "wandb" and is_main_process:
-    import wandb
-      
-    wandb.init(
-        project="cifar10-assessment",
-        config={
-            "dataset": "CIFAR10",
-            "epochs_total": epochs,
-            "Learning_rate": lr,
-            "batch_size": batch_size,
-            "momentum": momentum,
-            "optimizer": "Adam",
-            "loss": "CrossEntropyLoss"        
-        }
-    )
+    try:
+        import wandb
+
+        try:
+            api_key = wandb.api.api_key
+        except Exception:
+            api_key = None
+
+        if api_key is None:
+            print("\nERROR: No WandB API key found.")
+            print("Please login first:")
+            print("    wandb login YOUR_API_KEY")
+            sys.exit(0)
+
+        wandb.init(...)
+        
+    except ImportError:
+        print("\nERROR: WandB is not installed.")
+        print("Run:")
+        print("    pip install wandb")
+        sys.exit(0)
         
 elif args.tracker == "mlflow" and is_main_process:
-    import mlflow
-    
-    mlflow.set_tracking_uri("sqlite:///runs/mlflow.db")
-    mlflow.set_experiment("CNN_CIFAR10")
-    mlflow.start_run()
+    try:
+        import mlflow
+
+        mlflow.set_tracking_uri("sqlite:///runs/mlflow.db")
+        mlflow.set_experiment("CNN_CIFAR10")
+        mlflow.start_run()
+
+    except Exception as e:
+        print(f"\nERROR: MLflow initialization failed: {e}")
+        sys.exit(0)
 
 else:
     print("Tracking disabled")
