@@ -13,15 +13,6 @@ echo "Detected GPUs: $GPU_COUNT" | tee -a $LOG_FILE
 echo "Arguments: $@" | tee -a $LOG_FILE
 echo "======================================" | tee -a $LOG_FILE
 
-if [[ "$@" == *"--tracker wandb"* ]]; then
-    if [ -z "$WANDB_API_KEY" ]; then
-        echo "ERROR: No WandB API key found."
-        echo "Please login first:"
-        echo "    wandb login YOUR_API_KEY"
-        exit 1
-    fi
-fi
-
 if [ "$GPU_COUNT" -ge 2 ]; then
     echo "Launching multi-GPU training with torchrun..." | tee -a $LOG_FILE
     torchrun --nproc_per_node=$GPU_COUNT train.py "$@" 2>&1 | tee -a $LOG_FILE
