@@ -35,9 +35,6 @@ lr = args.lr
 batch_size = args.batch_size
 momentum = args.momentum
 
-# Note all the pakage versions in the requirement.txt file
-os.system("pip freeze > requirements.txt")
-
 # Setting random seeds for all random operation and setting determinitic flags
 SEED = 42
 
