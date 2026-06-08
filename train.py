@@ -186,25 +186,25 @@ if args.tracker == "wandb" and is_main_process:
     try:
         import wandb
 
-        try:
-            api_key = wandb.api.api_key
-        except Exception:
-            api_key = None
+        wandb.init(
+            project="cifar10-assessment",
+            config={
+                "dataset": "CIFAR10",
+                "epochs_total": epochs,
+                "learning_rate": lr,
+                "batch_size": batch_size,
+                "momentum": momentum,
+                "optimizer": "Adam",
+                "loss": "CrossEntropyLoss"
+            }
+        )
 
-        if api_key is None:
-            print("\nERROR: No WandB API key found.")
-            print("Please login first:")
-            print("    wandb login YOUR_API_KEY")
-            sys.exit(0)
+    except Exception as e:
+        print(f"\nERROR: WandB initialization failed: {e}")
+        print("Please login first:")
+        print("    wandb login YOUR_API_KEY")
+        raise
 
-        wandb.init(...)
-        
-    except ImportError:
-        print("\nERROR: WandB is not installed.")
-        print("Run:")
-        print("    pip install wandb")
-        sys.exit(0)
-        
 elif args.tracker == "mlflow" and is_main_process:
     try:
         import mlflow
@@ -215,11 +215,11 @@ elif args.tracker == "mlflow" and is_main_process:
 
     except Exception as e:
         print(f"\nERROR: MLflow initialization failed: {e}")
-        sys.exit(0)
+        raise
 
-else:
+elif is_main_process:
     print("Tracking disabled")
-
+    
 # Training loop
 PATH = './cifar_best_model.pth'
 best_test_accuracy = 0
