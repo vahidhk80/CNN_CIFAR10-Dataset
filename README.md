@@ -32,6 +32,22 @@ pip install -r requirements.txt
 ```
 
 ---
+## Repository Structure
+
+```text
+.
+├── train.py
+├── run_distributed.sh
+├── requirements.txt
+├── README.md
+├── evidence/
+│   ├── part_a/
+│   ├── part_b/
+│   └── part_c/
+└── runs/
+```
+
+---
 
 ## Running the Training Script
 
@@ -47,8 +63,6 @@ Available arguments:
 --epochs
 --batch-size
 --lr
---data
---output-dir
 --tracker {wandb, mlflow, none}
 ```
 
@@ -65,7 +79,7 @@ bash run_distributed.sh --epochs 5 --batch-size 128 --lr 0.001 --tracker wandb
 The launcher automatically:
 
 * Detects available GPUs
-* Selects distributed execution when multiple GPUs are available
+* Launches training using torchrun when multiple GPUs are detected
 * Falls back to single-process execution when required
 * Creates timestamped logs
 
@@ -80,7 +94,6 @@ The training script supports experiment tracking using Weights & Biases.
 Tracked information:
 
 * Training loss
-* Validation loss
 * Accuracy
 * Hyperparameters
 * Model checkpoints
