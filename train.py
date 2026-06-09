@@ -1,4 +1,5 @@
-# Importing required madules
+# Import required libraries for deep learning, data processing,
+# visualization, experiment tracking, and command-line arguments.
 import torch
 import torchvision
 from torchvision.transforms import v2
@@ -15,7 +16,8 @@ import argparse
 import os
 import sys
 
-# Using argparse to take the argument from the user
+# Define command-line arguments to allow users to configure
+# training settings without modifying the source code.
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--tracker",
@@ -35,7 +37,8 @@ lr = args.lr
 batch_size = args.batch_size
 momentum = args.momentum
 
-# Setting random seeds for all random operation and setting determinitic flags
+# Set random seeds and deterministic settings to ensure
+# reproducible training results across different runs.
 SEED = 42
 
 random.seed(SEED)
@@ -51,15 +54,17 @@ torch.backends.cudnn.benchmark = False
 
 print(f"Random seed set to {SEED}")
 
-#Data loading and processing
-# Defining transform and loading the CIFAR10 dataset
+# Define image preprocessing and normalization steps
+# for the CIFAR-10 dataset.
 transform = v2.Compose([
     v2.ToImage(),
     v2.ToDtype(torch.float32, scale=True),
     v2.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
 #batch_size = 4
-
+# Download and load training and test datasets.
+# Create DataLoader objects for batch processing during training
+# and evaluation.
 trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
                                         download=True, transform=transform)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
@@ -73,24 +78,13 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
 classes = ('plane', 'car', 'bird', 'cat',
            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-# functions to show an image
-def imshow(img):
-    img = img / 2 + 0.5     # unnormalize
-    npimg = img.numpy()
-    plt.imshow(np.transpose(npimg, (1, 2, 0)))
-    plt.show()
+# Sample image visualization code from the PyTorch tutorial
+# was removed because it is not required for automated training,
+# evaluation, checkpointing, or experiment tracking. it kept in 
+# the notebook file that is in the part_a evidence folder
 
-
-# get some random training images
-dataiter = iter(trainloader)
-images, labels = next(dataiter)
-
-# show images
-imshow(torchvision.utils.make_grid(images))
-# print labels
-print(' '.join(f'{classes[labels[j]]:5s}' for j in range(batch_size)))
-
-# Model ArchitectureDefining- CNN
+# Define a Convolutional Neural Network (CNN) architecture
+# for CIFAR-10 image classification.
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
@@ -113,20 +107,20 @@ class Net(nn.Module):
 
 net = Net()
 
-# Device and optimization setup
+# Automatically select GPU if available; otherwise use CPU.
 device = torch.device(torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else 'cpu')
 
-# Assuming that we are on a CUDA machine, this should print a CUDA device:
 print(device)
 
 net.to(device)
 
-#Defining optimiser and loss function
+# Define the loss function and optimization algorithm
+# used during model training.
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum)
 
 # Training Loop Implementation
-#defining a train function, becuase it can be used later for checkpointing.
+# Train the model for one epoch and return the average loss.
 def net_train_one_epoch(model, epoch, trainloader, optimizer, criterion):
     running_loss = 0.0
     total_loss = 0.0
@@ -134,10 +128,11 @@ def net_train_one_epoch(model, epoch, trainloader, optimizer, criterion):
         # get the inputs; data is a list of [inputs, labels]
         inputs, labels = data[0].to(device), data[1].to(device)
 
-        # zero the parameter gradients
+        # Clear previous gradients before each optimization step.
         optimizer.zero_grad()
 
-        # forward + backward + optimize
+        # Perform forward pass, loss calculation,
+        # backpropagation, and parameter update.
         outputs = model(inputs)
         loss = criterion(outputs, labels)
         loss.backward()
@@ -151,13 +146,16 @@ def net_train_one_epoch(model, epoch, trainloader, optimizer, criterion):
 
     print('Finished Training for epoch: ', epoch)
     return model, total_loss/len(trainloader)
-# defining an evalutaion function that is more suitable when needed to evaluation at checkpointing.
+
+# Evaluate model performance on the test dataset
+# and collect predictions for later analysis.
 def net_eval(model, testloader, device):
     correct = 0
     total = 0
     all_labels = []
     all_predictions = []
-    # since we're not training, we don't need to calculate the gradients for our outputs
+    # Disable gradient calculation to reduce memory usage
+    # during evaluation.
     with torch.no_grad():
         for data in testloader:
             images, labels = data[0].to(device), data[1].to(device)
@@ -175,9 +173,11 @@ def net_eval(model, testloader, device):
     print(f'Accuracy of the network on the 10000 test images: {accuracy} %')
     return accuracy, all_labels, all_predictions
 
-# Starting the tracker before the first training
+# Initialize the selected experiment tracking platform
+# (Weights & Biases, MLflow, or no tracking).
 rank = int(os.environ.get("RANK", 0))
 is_main_process = rank == 0
+
 
 if args.tracker == "wandb" and is_main_process:
     try:
@@ -217,7 +217,8 @@ elif args.tracker == "mlflow" and is_main_process:
 elif is_main_process:
     print("Tracking disabled")
     
-# Training loop
+# Main training loop. Train the model, evaluate performance,
+# log metrics, and save the best-performing checkpoint.
 PATH = './cifar_best_model.pth'
 best_test_accuracy = 0
 for epoch in range(epochs):
@@ -237,7 +238,8 @@ for epoch in range(epochs):
         mlflow.log_metric("train_loss", train_loss, step=epoch + 1)
         mlflow.log_metric("test_accuracy", test_accuracy, step=epoch + 1)    
     
-
+    # Save the model checkpoint whenever a higher test accuracy
+    # is achieved.
     if test_accuracy > best_test_accuracy:
         best_test_accuracy = test_accuracy
         # Saving the best model
@@ -247,12 +249,10 @@ for epoch in range(epochs):
             'test_accuracy': test_accuracy,
         }, PATH)
     
-
-# prepare to count predictions for each class
+# Calculate classification accuracy for each CIFAR-10 class.
 correct_pred = {classname: 0 for classname in classes}
 total_pred = {classname: 0 for classname in classes}
 
-# again no gradients needed
 with torch.no_grad():
     for data in testloader:
         images, labels = data[0].to(device), data[1].to(device)
@@ -269,7 +269,9 @@ with torch.no_grad():
 for classname, correct_count in correct_pred.items():
     accuracy = 100 * float(correct_count) / total_pred[classname]
     print(f'Accuracy for class: {classname:5s} is {accuracy:.1f} %')
-# Confusion matrix
+
+# Generate and visualize the confusion matrix to analyse
+# classification performance across classes.
 cm = confusion_matrix(all_labels, all_predictions)
 print(cm)
 
@@ -287,44 +289,43 @@ plt.xlabel("Predicted Label")
 plt.ylabel("True Label")
 plt.title("Confusion Matrix")
 
-plt.show()
-# setting checkpoint
+plt.savefig("confusion_matrix.png", bbox_inches="tight")
+print("Confusion matrix saved to confusion_matrix.png")
+plt.close()
+
+# Load the best saved model checkpoint for verification
+# and inference testing.
 checkpoint = torch.load(PATH)
 
 net.load_state_dict(checkpoint['model_state_dict'])
 optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
-test_accuracy = checkpoint['test_accuracy']
+saved_test_accuracy = checkpoint['test_accuracy']
 
-dataiter = iter(testloader)
-images, labels = next(dataiter)
-
-# print images
-imshow(torchvision.utils.make_grid(images))
-print('GroundTruth: ', ' '.join(f'{classes[labels[j]]:5s}' for j in range(4)))
 outputs = net(images.to(device))
 _, predicted = torch.max(outputs, 1)
 
 print('Predicted: ', ' '.join(f'{classes[predicted[j]]:5s}'
                               for j in range(4)))
-# finalizing tracking
-if args.tracker == "wandb" and is_main_process:
 
+# Save final tracking artifacts and properly close
+# the experiment tracking session.
+if args.tracker == "wandb" and is_main_process:
     artifact = wandb.Artifact("best-cifar10-model", type="model")
-    
     artifact.add_file("cifar_best_model.pth")
-    
     wandb.log_artifact(artifact)
     wandb.finish()
+
 elif args.tracker == "mlflow" and is_main_process:
     mlflow.end_run()
-# loading the best model for accuracy calculation
-checkpoint = torch.load(PATH)
 
-net.load_state_dict(checkpoint['model_state_dict'])
-optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+# Re-evaluate the loaded best model to verify checkpoint recovery.
+verified_test_accuracy, all_labels, all_predictions = net_eval(
+    net, testloader, device
+)
 
-test_accuracy = checkpoint['test_accuracy']
-
-test_accuracy, all_labels, all_predictions = net_eval(net, testloader, device)
-print(f"Test Accuracy from saved best model is {test_accuracy} and test accuracy from the training loop is {best_test_accuracy}")
+print(
+    f"Saved checkpoint accuracy is {saved_test_accuracy} "
+    f"and verified loaded model accuracy is {verified_test_accuracy}. "
+    f"Best training-loop accuracy is {best_test_accuracy}."
+)

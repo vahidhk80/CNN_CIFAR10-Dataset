@@ -161,6 +161,33 @@ Ensure the tracking directory exists and is writable.
 
 ## Evidence Folder Structure
 
+The `evidence` directory contains supporting materials and assessment evidence for all project components. Each folder includes screenshots, outputs, and supporting files demonstrating successful completion of the corresponding assessment requirements.
+
+### Part A – Single Device Training and Experiment Tracking
+
+This folder contains:
+
+* The Kaggle notebook used to develop and execute the Part A solution.
+* The notebook includes the final version of the training script prepared specifically to satisfy all Part A assessment requirements.
+* Screenshots showing successful execution, training results, generated outputs, and tracker integration.
+
+### Part B – Distributed Training
+
+This folder contains:
+
+* Screenshots showing successful multi-process execution and training outputs.
+
+### Part C – VS Code Remote Development Environment
+
+This folder contains:
+
+* The Kaggle notebook used to establish the VS Code Tunnel connection between Visual Studio Code and the Kaggle environment.
+* Evidence demonstrating successful remote access from VS Code to the Kaggle runtime.
+* These evidences are screenshots showing the VS Code Tunnel setup, remote connection, file management, and development workflow.
+
+This notebook was used exclusively for demonstrating the remote development workflow required for Part C and is separate from the notebook used in Part A.
+
+
 ```text
 evidence/
 ├── part_a/
