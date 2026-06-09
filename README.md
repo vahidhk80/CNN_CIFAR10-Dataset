@@ -21,8 +21,8 @@ The solution was developed using Kaggle GPU resources and accessed remotely thro
 ### Clone Repository
 
 ```bash
-git clone <repository-url>
-cd <repository-folder>
+git clone https://github.com/vahidhk80/CNN_CIFAR10-Dataset.git
+cd CNN_CIFAR10-Dataset
 ```
 
 ### Install Dependencies
@@ -40,11 +40,16 @@ pip install -r requirements.txt
 ├── run_distributed.sh
 ├── requirements.txt
 ├── README.md
-├── evidence/
-│   ├── part_a/
-│   ├── part_b/
-│   └── part_c/
-└── runs/
+└── evidence/
+    ├── part_a/
+    │   ├── train_part_a.ipynb
+    │   └── screenshots/
+    ├── part_b/
+    │   └── screenshots/
+    └── part_c/
+        ├── Kaggle_Vscode_tunnel.ipynb
+        └── screenshots/
+
 ```
 
 ---
@@ -176,6 +181,8 @@ This folder contains:
 This folder contains:
 
 * Screenshots showing successful multi-process execution and training outputs.
+* Evidence of torchrun execution and multi-process training.
+* Training outputs and logs generated during distributed execution.
 
 ### Part C – VS Code Remote Development Environment
 
@@ -194,14 +201,9 @@ evidence/
 ├── part_b/
 └── part_c/
 ```
+## Conclusion
 
-Evidence includes:
-
-* Environment setup screenshots
-* Training logs
-* Experiment tracking screenshots
-* Model checkpoints
-* Distributed launcher outputs
+This project demonstrates a complete machine learning workflow including data preparation, model training, experiment tracking, checkpointing, distributed execution, and cloud-based development using Kaggle and Visual Studio Code.
 
 ---
 
@@ -226,5 +228,4 @@ Evidence includes:
 * Cloud-based model execution
 * Environment documentation and setup
 
-```
 ```
